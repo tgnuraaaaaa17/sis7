@@ -704,6 +704,15 @@ code {
   flex-direction: row;
   align-items: center;
   gap: 8px;
+  min-height: 44px;
+}
+
+.field--checkbox input[type='checkbox'] {
+  width: 20px;
+  height: 20px;
+  margin: 0;
+  flex: 0 0 20px;
+  accent-color: var(--accent);
 }
 
 .field__label {
