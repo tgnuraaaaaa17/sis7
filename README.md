@@ -8,7 +8,7 @@ SIS7 extends the previous Kazakhstan Places homework as an independently deploye
 - Versioned service worker that precaches the application shell and offline page, removes old caches on activation, and offers an in-app update button.
 - Cache-first strategy for static assets and network-first strategy for public GET API requests, with entry limits and authentication paths excluded.
 - Dedicated offline help at `#/offline`, plus a pre-cached `offline.html` fallback when a navigation request cannot complete.
-- Online/offline status indicator. Existing place data is kept in localStorage by the supplied fake API, so previously loaded and edited records remain available offline.
+- Firebase Authentication with Google sign-in, email/password login, account registration, and sign-out. Existing place data is kept in localStorage by the supplied fake API, so previously loaded and edited records remain available offline.
 - Responsive navigation and layouts down to 320px.
 
 ## Routes
@@ -20,7 +20,7 @@ SIS7 extends the previous Kazakhstan Places homework as an independently deploye
 | `/places` | Search, filters, sorting, pagination |
 | `/places/:id` | Place details |
 | `/dashboard` | Statistics and filters |
-| `/login` | Login placeholder |
+| `/login` | Google sign-in, email/password login, registration |
 | `/offline` | Offline help |
 
 The app uses `HashRouter` for reliable refreshes and deep links on GitHub Pages.
@@ -34,8 +34,8 @@ npm run build
 npm run preview
 ```
 
-The service worker is registered in production builds. To check installability locally, use a secure origin such as `localhost` and open the production preview.
+The service worker is registered in production builds. To check installability locally, use a secure origin such as `localhost` and open the production preview. Copy `.env.example` to `.env.local` and fill the Firebase web app settings for local sign-in.
 
 ## Deploy
 
-The included GitHub Actions workflow publishes `dist/` to GitHub Pages whenever `main` is updated. Create a new repository named `sis7`, push this folder to it, then enable **Settings → Pages → GitHub Actions**. Deployment URL format: `https://<your-github-username>.github.io/sis7/`.
+The included GitHub Actions workflow publishes `dist/` to GitHub Pages whenever `main` is updated. The SIS7 repository needs these six Actions variables: `VITE_FIREBASE_API_KEY`, `VITE_FIREBASE_AUTH_DOMAIN`, `VITE_FIREBASE_PROJECT_ID`, `VITE_FIREBASE_STORAGE_BUCKET`, `VITE_FIREBASE_MESSAGING_SENDER_ID`, and `VITE_FIREBASE_APP_ID`. They are public Firebase web app settings used by the browser app. In Firebase Authentication, enable Google sign-in and allow the GitHub Pages host in Authorized domains. Deployment URL: `https://tgnuraaaaaa17.github.io/sis7/`.

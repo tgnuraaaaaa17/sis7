@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Link, NavLink } from 'react-router';
+import { useAuth } from '../context/AuthContext.jsx';
 
 const LINKS = [
   { to: '/', label: 'Home', end: true },
@@ -12,6 +13,17 @@ const linkClass = ({ isActive }) => `navbar__link${isActive ? ' navbar__link--ac
 
 export default function NavBar() {
   const [open, setOpen] = useState(false);
+  const { user, logout } = useAuth();
+
+  async function handleLogout() {
+    try {
+      await logout();
+      setOpen(false);
+    } catch (error) {
+      console.error('Could not sign out:', error);
+    }
+  }
+
   return (
     <header className="navbar">
       <div className="navbar__inner">
@@ -30,9 +42,16 @@ export default function NavBar() {
               {link.label}
             </NavLink>
           ))}
-          <NavLink to="/login" className="btn btn--small navbar__login" onClick={() => setOpen(false)}>
-            Log in
-          </NavLink>
+          {user ? (
+            <>
+              <span className="navbar__link navbar__user" title={user.email}>{user.displayName || user.email}</span>
+              <button type="button" className="btn btn--small navbar__login" onClick={handleLogout}>Log out</button>
+            </>
+          ) : (
+            <NavLink to="/login" className="btn btn--small navbar__login" onClick={() => setOpen(false)}>
+              Log in
+            </NavLink>
+          )}
         </nav>
       </div>
     </header>

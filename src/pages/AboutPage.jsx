@@ -8,7 +8,7 @@ const ROUTES = [
   ['/places', 'Places list with search, filters, sorting and pagination'],
   ['/places/:id', 'Details of one place'],
   ['/dashboard', 'Statistics calculated from the API data'],
-  ['/login', 'Login placeholder'],
+  ['/login', 'Firebase sign-in with Google or email and password'],
   ['*', 'Not found page'],
 ];
 
