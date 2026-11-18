@@ -4,11 +4,11 @@ SIS7 extends the previous Kazakhstan Places homework as an independently deploye
 
 ## Features
 
-- Installable app manifest with standalone display and 192×192 / 512×512 PNG icons.
-- Versioned service worker that precaches the application shell and offline page, removes old caches on activation, and offers an in-app update button.
-- Cache-first strategy for static assets and network-first strategy for public GET API requests, with entry limits and authentication paths excluded.
+- Installable `manifest.json` with standalone display and 192×192 / 512×512 PNG icons.
+- Content-versioned service worker that precaches the application shell and offline page, removes outdated caches on activation, and offers an in-app update button.
+- Cache-first strategy for static assets and network-first strategy for public GET API requests, with entry limits and authentication paths excluded. Cached API fallbacks are labeled in the connection bar.
 - Dedicated offline help at `#/offline`, plus a pre-cached `offline.html` fallback when a navigation request cannot complete.
-- Firebase Authentication with Google sign-in, email/password login, account registration, and sign-out. Existing place data is kept in localStorage by the supplied fake API, so previously loaded and edited records remain available offline.
+- Firebase Authentication with Google sign-in, email/password login, account registration, and sign-out. The supplied fake API stores place data in localStorage, so previously loaded and edited records remain available offline; the connection bar says when the app is using device-saved data.
 - Responsive navigation and layouts down to 320px.
 
 ## Routes
@@ -24,6 +24,8 @@ SIS7 extends the previous Kazakhstan Places homework as an independently deploye
 | `/offline` | Offline help |
 
 The app uses `HashRouter` for reliable refreshes and deep links on GitHub Pages.
+
+The homework starter's fake API is localStorage-backed rather than a remote HTTP service. Its place records remain on the device and can be read offline. The service worker also applies network-first caching to same-origin `/api/` GET requests, when such endpoints are used.
 
 ## Run locally
 

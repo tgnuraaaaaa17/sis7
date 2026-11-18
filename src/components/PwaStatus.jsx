@@ -3,30 +3,31 @@ import { useEffect, useState } from 'react';
 export default function PwaStatus() {
   const [online, setOnline] = useState(navigator.onLine);
   const [waitingWorker, setWaitingWorker] = useState(null);
+  const [cachedApiData, setCachedApiData] = useState(false);
 
   useEffect(() => {
     const update = () => setOnline(navigator.onLine);
+    const handleServiceWorkerMessage = (event) => {
+      if (event.data?.type === 'PUBLIC_DATA_CACHE') setCachedApiData(true);
+      if (event.data?.type === 'PUBLIC_DATA_NETWORK') setCachedApiData(false);
+    };
     window.addEventListener('online', update);
     window.addEventListener('offline', update);
-    let registration;
-    let reloadOnControllerChange = false;
+    navigator.serviceWorker?.addEventListener('message', handleServiceWorkerMessage);
 
     navigator.serviceWorker?.ready.then((ready) => {
-      registration = ready;
-      const check = () => setWaitingWorker(registration.waiting && navigator.serviceWorker.controller ? registration.waiting : null);
+      const check = () => setWaitingWorker(ready.waiting && navigator.serviceWorker.controller ? ready.waiting : null);
       check();
-      registration.addEventListener('updatefound', () => {
-        const installing = registration.installing;
+      ready.addEventListener('updatefound', () => {
+        const installing = ready.installing;
         installing?.addEventListener('statechange', check);
-      });
-      navigator.serviceWorker.addEventListener('controllerchange', () => {
-        if (reloadOnControllerChange) window.location.reload();
       });
     }).catch(() => {});
 
     return () => {
       window.removeEventListener('online', update);
       window.removeEventListener('offline', update);
+      navigator.serviceWorker?.removeEventListener('message', handleServiceWorkerMessage);
     };
   }, []);
 
@@ -38,7 +39,8 @@ export default function PwaStatus() {
 
   return <div className={`pwa-status ${online ? 'pwa-status--online' : 'pwa-status--offline'}`} role="status" aria-live="polite">
     <span className="pwa-status__dot" />
-    <span>{online ? 'Online' : 'Offline · showing saved data'}</span>
+    <span>{online ? 'Online' : 'Offline · viewing data saved on this device'}</span>
+    {cachedApiData && <span className="pwa-status__cache">Viewing cached public data</span>}
     {!online && <a href="#/offline">Offline help</a>}
     {waitingWorker && <><span className="pwa-status__update">A new version is ready.</span><button className="btn btn--small" type="button" onClick={applyUpdate}>Update now</button></>}
   </div>;
