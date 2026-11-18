@@ -25,7 +25,7 @@ SIS7 extends the previous Kazakhstan Places homework as an independently deploye
 
 The app uses `HashRouter` for reliable refreshes and deep links on GitHub Pages.
 
-The homework starter's fake API is localStorage-backed rather than a remote HTTP service. Its place records remain on the device and can be read offline. The service worker also applies network-first caching to same-origin `/api/` GET requests, when such endpoints are used.
+The homework starter's fake API is localStorage-backed rather than a remote HTTP service. The service layer mirrors the known public seed catalogue into the service worker's versioned Cache Storage under `/api/places` keys, then reads that public snapshot if a local API read fails. It excludes user-added places and the personal `completed` flag. The service worker uses network-first for same-origin `/api/places` GET requests and announces cache fallbacks to the connection bar. The fake API's localStorage remains the source for edits and visited status.
 
 ## Run locally
 
@@ -34,6 +34,7 @@ npm ci
 npm run dev
 npm run build
 npm run preview
+npm run verify:pwa-cache
 ```
 
 The service worker is registered in production builds. To check installability locally, use a secure origin such as `localhost` and open the production preview. Copy `.env.example` to `.env.local` and fill the Firebase web app settings for local sign-in.

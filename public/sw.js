@@ -37,6 +37,13 @@ function notifyClients(message) {
     .catch(() => {});
 }
 
+async function cachedApiResponse(cache, request) {
+  const cached = await cache.match(request);
+  if (!cached) return null;
+  notifyClients({ type: 'PUBLIC_DATA_CACHE' });
+  return cached;
+}
+
 async function networkFirst(request) {
   const cache = await caches.open(API_CACHE);
   try {
@@ -45,14 +52,15 @@ async function networkFirst(request) {
       await cache.put(request, response.clone());
       await trimCache(cache, MAX_API_ENTRIES);
       notifyClients({ type: 'PUBLIC_DATA_NETWORK' });
+      return response;
+    }
+    if (response.status === 404 || response.status >= 500) {
+      return (await cachedApiResponse(cache, request)) || response;
     }
     return response;
   } catch {
-    const cached = await cache.match(request);
-    if (cached) {
-      notifyClients({ type: 'PUBLIC_DATA_CACHE' });
-      return cached;
-    }
+    const cached = await cachedApiResponse(cache, request);
+    if (cached) return cached;
     return new Response(JSON.stringify({ error: 'You are offline and this public response has not been cached yet.' }), {
       status: 503, headers: { 'Content-Type': 'application/json', 'X-Cache': 'MISS' },
     });
@@ -75,9 +83,10 @@ self.addEventListener('fetch', (event) => {
   const request = event.request;
   const url = new URL(request.url);
   if (request.method !== 'GET' || url.origin !== self.location.origin) return;
+  if (request.headers.has('Authorization')) return;
   if (/\/auth(?:\/|$)|token|session/i.test(url.pathname + url.search)) return;
 
-  if (/\/api(?:\/|$)/i.test(url.pathname)) {
+  if (/\/api\/places(?:\/[1-9]\d*)?$/i.test(url.pathname)) {
     event.respondWith(networkFirst(request));
     return;
   }

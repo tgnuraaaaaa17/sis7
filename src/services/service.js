@@ -1,13 +1,17 @@
 /**
  * services/service.js — the only place where the app talks to the API.
  *
- * The starter fake API (src/api/fakeApi.js, kept unmodified) can search by
- * name/description, sort by name and paginate. The homework needs more
- * (category / region / status filters, more sort orders), so this service
- * asks the API for the search result and then filters, sorts and paginates it.
+ * The starter fake API (src/api/fakeApi.js, kept unmodified) is localStorage-backed.
+ * This service reads the public catalogue once, mirrors a privacy-safe snapshot
+ * into the service worker cache, then applies search, filters, sorting, and paging.
  */
 import { createItem, deleteItem, getItem, getItemsList, updateItem } from '../api/fakeApi.js';
 import { DEFAULT_SORT, PAGE_LIMIT } from '../utils/constants.js';
+import {
+  announceFreshPublicData,
+  readPublicApiSnapshot,
+  savePublicApiSnapshot,
+} from './publicDataCache.js';
 
 const ALL = 1000; // more than the number of records the demo database can hold
 
@@ -40,6 +44,8 @@ export function isValidPlaceId(id) {
 }
 
 const byName = (a, b) => a.name.localeCompare(b.name);
+const PUBLIC_LIST_QUERY = `page=1&limit=${ALL}&sort=name`;
+const PUBLIC_LIST_CACHE_KEY = `api/places?${PUBLIC_LIST_QUERY}`;
 
 const COMPARATORS = {
   name: byName,
@@ -68,10 +74,23 @@ export async function getPlaces({
   page = 1,
   limit = PAGE_LIMIT,
 } = {}) {
-  const query = new URLSearchParams({ page: '1', limit: String(ALL), sort: 'name' });
-  if (search.trim()) query.set('search', search.trim());
+  let data;
+  try {
+    ({ data } = await getItemsList(PUBLIC_LIST_QUERY));
+    await savePublicApiSnapshot(PUBLIC_LIST_CACHE_KEY, data);
+    announceFreshPublicData();
+  } catch (error) {
+    data = await readPublicApiSnapshot(PUBLIC_LIST_CACHE_KEY);
+    if (!data) throw error;
+  }
 
-  const { data } = await getItemsList(query.toString());
+  if (search.trim()) {
+    const normalizedSearch = search.trim().toLowerCase();
+    data = data.filter((place) => (
+      place.name.toLowerCase().includes(normalizedSearch)
+      || place.description.toLowerCase().includes(normalizedSearch)
+    ));
+  }
 
   const facets = {
     categories: unique(data.map((place) => place.category)),
@@ -101,8 +120,16 @@ export async function getPlaces({
 
 /** Every place (used by the Dashboard for statistics). */
 export async function getAllPlaces() {
-  const result = await getItemsList(`page=1&limit=${ALL}&sort=name`);
-  return result.data;
+  try {
+    const result = await getItemsList(PUBLIC_LIST_QUERY);
+    await savePublicApiSnapshot(PUBLIC_LIST_CACHE_KEY, result.data);
+    announceFreshPublicData();
+    return result.data;
+  } catch (error) {
+    const cached = await readPublicApiSnapshot(PUBLIC_LIST_CACHE_KEY);
+    if (cached) return cached;
+    throw error;
+  }
 }
 
 /** One place by id. Throws PlaceNotFoundError for invalid or missing ids. */
@@ -110,9 +137,14 @@ export async function getPlace(id) {
   if (!isValidPlaceId(id)) throw new PlaceNotFoundError(id);
 
   try {
-    return await getItem(id);
+    const place = await getItem(id);
+    await savePublicApiSnapshot(`api/places/${id}`, place);
+    announceFreshPublicData();
+    return place;
   } catch (error) {
     if (error?.message === 'Item not found') throw new PlaceNotFoundError(id);
+    const cached = await readPublicApiSnapshot(`api/places/${id}`);
+    if (cached) return cached;
     throw error;
   }
 }

@@ -11,8 +11,10 @@ export default function PwaStatus() {
       if (event.data?.type === 'PUBLIC_DATA_CACHE') setCachedApiData(true);
       if (event.data?.type === 'PUBLIC_DATA_NETWORK') setCachedApiData(false);
     };
+    const handleDataSource = (event) => setCachedApiData(Boolean(event.detail?.cached));
     window.addEventListener('online', update);
     window.addEventListener('offline', update);
+    window.addEventListener('sis7:public-data-source', handleDataSource);
     navigator.serviceWorker?.addEventListener('message', handleServiceWorkerMessage);
 
     navigator.serviceWorker?.ready.then((ready) => {
@@ -27,6 +29,7 @@ export default function PwaStatus() {
     return () => {
       window.removeEventListener('online', update);
       window.removeEventListener('offline', update);
+      window.removeEventListener('sis7:public-data-source', handleDataSource);
       navigator.serviceWorker?.removeEventListener('message', handleServiceWorkerMessage);
     };
   }, []);
